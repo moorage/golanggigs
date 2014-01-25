@@ -7,7 +7,7 @@ $.getJSON('/index.json', function(data) {
   else {
     var tbody = $('#gigs tbody');
     for (var i = 0; i < data.length; ++i) {
-      tbody.append("<tr><td><a href='"+data[i]+"'>"+data[i]+"</a></td></tr>");
+      tbody.append("<tr><td><a href='"+data[i].SourceUrl+"'><strong>"+data[i].CompanyName+"</strong><span>"+data[i].JobTitle+"</span></a></td></tr>");
     }
   }
 });

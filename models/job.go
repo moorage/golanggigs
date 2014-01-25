@@ -1,9 +1,5 @@
 package models
 
-import (
-
-)
-
 type Job struct {
 	Id              int64
 	JobTitle        string
