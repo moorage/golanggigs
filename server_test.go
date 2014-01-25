@@ -3,11 +3,12 @@ package main_test
 import (
 	"testing"
 	"./scrapers"
+	"log"
 )
 
 /* TODO: Implement! */
 func TestScraping(t *testing.T) {
-	result, err := scrapers.Google("golang", "theresumator.com")
-	if (err) { t.Errorf("Couldn't call scrapers.Google on %s, %s: %s", "golang", "thresumator.com", err.Message()) }
-	fmt.Printf(result)
+	job, err := scrapers.ResumatorJob("http://iron.theresumator.com/apply/8KLLHQ/Go-Developer.html")
+	if err != nil { t.Errorf("Couldn't call scrapers.ResumatorJob %s", err.Error()) }
+	log.Printf("JOB::::::::::::::: %#v", job)
 }
