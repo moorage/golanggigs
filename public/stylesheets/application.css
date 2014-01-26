@@ -18,3 +18,24 @@ a { cursor:pointer; }
 a strong {color:#000;}
 a:hover strong {text-decoration:none;}
 a span {margin-left:10px; text-decoration:underline;}
+.navbar-collapse, .navbar-form {
+  background: #E0EBF5;  
+}
+
+.navbar-inverse {
+  background-color: #E0EBF5;
+  border-color: #E0EBF5;
+}
+.navbar-inverse .navbar-nav>li>a {
+  color:#375EAB;
+}
+.navbar-inverse .navbar-brand,
+.navbar-inverse .navbar-brand:hover {
+  color: #222;
+}
+.navbar-inverse .navbar-nav>li>a:hover, 
+.navbar-inverse .navbar-nav>li>a:focus {
+  color: #375EAB;
+  text-decoration:underline;
+  background-color: transparent;
+}

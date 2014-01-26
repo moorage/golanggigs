@@ -11,6 +11,41 @@ import (
 	"../models"
 )
 
+
+func removeSubstringDuplicates(source []string) []string {
+	nonduplicates := []string{}
+	for i := 0; i < len(source); i++ {
+		imatched := false
+		for j := 0; j < len(source); j++ {
+			if i == j { continue }
+			
+			if (strings.Index(strings.ToLower(source[i]), strings.ToLower(source[j])) > -1) || (strings.Index(strings.ToLower(source[j]), strings.ToLower(source[i])) > -1) {
+				imatched  = true
+				
+				previouslyAdded := false
+				for k := 0; k < len(nonduplicates); k++ {
+					if (strings.Index(strings.ToLower(source[i]), strings.ToLower(nonduplicates[k])) > -1) || (strings.Index(strings.ToLower(nonduplicates[k]), strings.ToLower(source[i])) > -1) {
+						previouslyAdded = true
+					}
+				}
+				
+				if !previouslyAdded {
+					if len(source[i]) < len(source[j]) {
+						nonduplicates = append(nonduplicates, source[i])
+					} else if len(source[i]) == len(source[j]) && i < j {
+						nonduplicates = append(nonduplicates, source[i])
+					}
+				}
+			}
+		}
+		
+		if !imatched {
+			nonduplicates = append(nonduplicates, source[i])
+		}
+	}
+	return nonduplicates
+}
+
 func Google(query string, site string) ([]string, error) {
 	resp, err := http.Get("http://www.google.com/search?um=1&ie=UTF-8&hl=en&tbm=isch&source=og&sa=N&tab=wi&q=" + url.QueryEscape(query) + "+site%3A" + url.QueryEscape(site))
 	if err != nil { return []string{}, err }
@@ -37,7 +72,7 @@ func Google(query string, site string) ([]string, error) {
 			}
 		}
 	}
-	return urls, nil
+	return removeSubstringDuplicates(urls), nil
 }
 
 func Github(query string) ([]string, error) {
@@ -63,7 +98,7 @@ func Github(query string) ([]string, error) {
 			}
 		}
 	}
-	return urls, nil
+	return removeSubstringDuplicates(urls), nil
 }
 
 func StackOverflow(query string) ([]string, error) {
@@ -89,7 +124,7 @@ func StackOverflow(query string) ([]string, error) {
 			}
 		}
 	}
-	return urls, nil
+	return removeSubstringDuplicates(urls), nil
 }
 
 func Dice(query string) ([]string, error) {
@@ -115,11 +150,15 @@ func Dice(query string) ([]string, error) {
 			}
 		}
 	}
-	return urls, nil
+	return removeSubstringDuplicates(urls), nil
 }
 
 func companyNameFromJobUrl(url string) string {
 	return strings.Split(strings.Split(strings.Split(url, "://")[1], "/")[0], ".")[1]
+}
+
+func companyBaseUrl(url string) string {
+	return "http://" + strings.Split(strings.Split(url, "://")[1], "/")[0]
 }
 
 func innerHtml(n *html.Node) string {
@@ -143,6 +182,224 @@ func innerHtml(n *html.Node) string {
 	return result
 }
 
+func DiceJob(url string) (models.Job, error) {
+	job := models.Job{SourceUrl: url, SourceName: companyNameFromJobUrl(url)}
+	
+	resp, err := http.Get(url)
+	if err != nil { return job, err }
+	
+	content, err := ioutil.ReadAll(resp.Body)
+	if err != nil { return job, err }
+	resp.Body.Close()
+	
+	
+	jobNameSelector, err := selector.Selector("h1#jobTitle")
+	if err != nil { return job, err }
+	
+	descriptionSelector, err := selector.Selector("#detailDescription")
+	if err != nil { return job, err }
+	
+	locationSelector, err := selector.Selector(".jumbotron h2")
+	if err != nil { return job, err }
+	
+	howtoapplySelector, err := selector.Selector("a#APPLY_FOR_JOB")
+	if err != nil { return job, err }
+	
+	companyUrlSelector, err := selector.Selector(".contact-url a")
+	if err != nil { return job, err }
+	
+	companyNameSelector, err := selector.Selector(".companyLogo img")
+	if err != nil { return job, err }
+	
+	h5content, err := h5.NewFromString(string(content))
+	if err != nil { return job, err }
+	
+	jobNameNodes := jobNameSelector.Find(h5content.Top())
+	if (len(jobNameNodes) > 0) {
+		job.JobTitle = strings.TrimSpace(jobNameNodes[0].FirstChild.Data)
+	}
+	
+	companyNameNodes := companyNameSelector.Find(h5content.Top())
+	if (len(companyNameNodes) > 0) {
+		for j := 0; j < len(companyNameNodes[0].Attr); j++ {
+			if companyNameNodes[0].Attr[j].Key == "alt" {
+				job.CompanyName = companyNameNodes[0].Attr[j].Val;
+			}
+		}
+	}
+	
+	locationNodes := locationSelector.Find(h5content.Top())
+	if (len(locationNodes) > 0) {
+		job.JobLocation = strings.TrimSpace(strings.Split(locationNodes[0].LastChild.Data, " in ")[1])
+	}
+	
+	_ = howtoapplySelector.Find(h5content.Top())
+	job.HowToApply = "Apply On Dice"
+	
+	companyUrlNodes := companyUrlSelector.Find(h5content.Top())
+	if (len(companyUrlNodes) > 0) {
+		for j := 0; j < len(companyUrlNodes[0].Attr); j++ {
+			if companyUrlNodes[0].Attr[j].Key == "href" {
+				job.CompanyUrl = companyBaseUrl(companyUrlNodes[0].Attr[j].Val);
+			}
+		}
+	}
+	
+	descriptionNodes := descriptionSelector.Find(h5content.Top())
+	if (len(descriptionNodes) > 0) {
+		job.JobDescription = innerHtml(descriptionNodes[0])
+	}
+	
+	return job, nil
+}
+
+
+func StackOverflowJob(url string) (models.Job, error) {
+	job := models.Job{SourceUrl: url, SourceName: companyNameFromJobUrl(url)}
+	
+	resp, err := http.Get(url)
+	if err != nil { return job, err }
+	
+	content, err := ioutil.ReadAll(resp.Body)
+	if err != nil { return job, err }
+	resp.Body.Close()
+	
+	
+	jobNameSelector, err := selector.Selector("#title a")
+	if err != nil { return job, err }
+	
+	descriptionSelector, err := selector.Selector(".jobdetail .description")
+	if err != nil { return job, err }
+	
+	locationSelector, err := selector.Selector("span.location")
+	if err != nil { return job, err }
+	
+	howtoapplySelector, err := selector.Selector(".apply")
+	if err != nil { return job, err }
+	
+	companyUrlSelector, err := selector.Selector("a.employer")
+	if err != nil { return job, err }
+	
+	companyNameSelector, err := selector.Selector("a.employer")
+	if err != nil { return job, err }
+	
+	h5content, err := h5.NewFromString(string(content))
+	if err != nil { return job, err }
+	
+	jobNameNodes := jobNameSelector.Find(h5content.Top())
+	if (len(jobNameNodes) > 0) {
+		job.JobTitle = strings.TrimSpace(jobNameNodes[0].FirstChild.Data)
+	}
+	
+	companyNameNodes := companyNameSelector.Find(h5content.Top())
+	if (len(companyNameNodes) > 0) {
+		job.CompanyName = strings.TrimSpace(companyNameNodes[0].FirstChild.Data)
+	}
+	
+	locationNodes := locationSelector.Find(h5content.Top())
+	if (len(locationNodes) > 0) {
+		job.JobLocation = strings.TrimSpace(strings.Split(locationNodes[0].LastChild.Data, "(")[0])
+	}
+	
+	_ = howtoapplySelector.Find(h5content.Top())
+	job.HowToApply = "Apply On Stack Overflow"
+	
+	companyUrlNodes := companyUrlSelector.Find(h5content.Top())
+	if (len(companyUrlNodes) > 0) {
+		for j := 0; j < len(companyUrlNodes[0].Attr); j++ {
+			if companyUrlNodes[0].Attr[j].Key == "href" {
+				job.CompanyUrl = companyUrlNodes[0].Attr[j].Val;
+			}
+		}
+	}
+	
+	descriptionNodes := descriptionSelector.Find(h5content.Top())
+	if (len(descriptionNodes) > 0) {
+		for j := 0; j < len(descriptionNodes); j++ {
+			job.JobDescription = job.JobDescription + innerHtml(descriptionNodes[j])
+		}
+	}
+	job.JobDescription = strings.Replace(job.JobDescription, "<h2>Job Description</h2>", "", -1)
+	
+	return job, nil
+}
+
+
+func JobviteJob(url string) (models.Job, error) {
+	job := models.Job{SourceUrl: url, SourceName: companyNameFromJobUrl(url)}
+	
+	resp, err := http.Get(url)
+	if err != nil { return job, err }
+	
+	content, err := ioutil.ReadAll(resp.Body)
+	if err != nil { return job, err }
+	resp.Body.Close()
+	
+	
+	jobNameSelector, err := selector.Selector(".jvjobheader h2")
+	if err != nil { return job, err }
+	
+	descriptionSelector, err := selector.Selector(".jvdescriptionbody")
+	if err != nil { return job, err }
+	
+	locationSelector, err := selector.Selector(".jvjobheader h3")
+	if err != nil { return job, err }
+	
+	howtoapplySelector, err := selector.Selector(".applybtn a")
+	if err != nil { return job, err }
+	
+	companyUrlSelector, err := selector.Selector(".jvheader a")
+	if err != nil { return job, err }
+	
+	companyNameSelector, err := selector.Selector(".jvheader img")
+	if err != nil { return job, err }
+	
+	h5content, err := h5.NewFromString(string(content))
+	if err != nil { return job, err }
+	
+	jobNameNodes := jobNameSelector.Find(h5content.Top())
+	if (len(jobNameNodes) > 0) {
+		job.JobTitle = strings.TrimSpace(jobNameNodes[0].FirstChild.Data)
+	}
+	
+	companyNameNodes := companyNameSelector.Find(h5content.Top())
+	if (len(companyNameNodes) > 0) {
+		for j := 0; j < len(companyNameNodes[0].Attr); j++ {
+			if companyNameNodes[0].Attr[j].Key == "alt" {
+				job.CompanyName = companyNameNodes[0].Attr[j].Val;
+			}
+		}
+	}
+	
+	locationNodes := locationSelector.Find(h5content.Top())
+	if (len(locationNodes) > 0) {
+		job.JobLocation = strings.TrimSpace(strings.Split(locationNodes[0].LastChild.Data, "|")[1])
+	}
+	
+	howtoapplyNodes := howtoapplySelector.Find(h5content.Top())
+	if (len(howtoapplyNodes) > 0) {
+		job.HowToApply = strings.Replace(innerHtml(howtoapplyNodes[len(howtoapplyNodes)-1]), "h2>", "span>", -1)
+	} else {
+		job.HowToApply = "Apply On LinkedIn"
+	}
+	
+	companyUrlNodes := companyUrlSelector.Find(h5content.Top())
+	if (len(companyUrlNodes) > 0) {
+		for j := 0; j < len(companyUrlNodes[0].Attr); j++ {
+			if companyUrlNodes[0].Attr[j].Key == "href" {
+				job.CompanyUrl = companyUrlNodes[0].Attr[j].Val;
+			}
+		}
+	}
+	
+	descriptionNodes := descriptionSelector.Find(h5content.Top())
+	if (len(descriptionNodes) > 0) {
+		job.JobDescription = innerHtml(descriptionNodes[0])
+	}
+	
+	return job, nil
+}
+
 
 func LinkedinJob(url string) (models.Job, error) {
 	job := models.Job{SourceUrl: url, SourceName: companyNameFromJobUrl(url)}
@@ -155,7 +412,7 @@ func LinkedinJob(url string) (models.Job, error) {
 	resp.Body.Close()
 	
 	
-	h1Selector, err := selector.Selector("h1.title")
+	jobNameSelector, err := selector.Selector("h1.title")
 	if err != nil { return job, err }
 	
 	descriptionSelector, err := selector.Selector(".description-module div.rich-text")
@@ -176,9 +433,9 @@ func LinkedinJob(url string) (models.Job, error) {
 	h5content, err := h5.NewFromString(string(content))
 	if err != nil { return job, err }
 	
-	h1Nodes := h1Selector.Find(h5content.Top())
-	if (len(h1Nodes) > 0) {
-		job.JobTitle = strings.TrimSpace(h1Nodes[0].FirstChild.Data)
+	jobNameNodes := jobNameSelector.Find(h5content.Top())
+	if (len(jobNameNodes) > 0) {
+		job.JobTitle = strings.TrimSpace(jobNameNodes[0].FirstChild.Data)
 	}
 	
 	companyNameNodes := companyNameSelector.Find(h5content.Top())
@@ -227,7 +484,7 @@ func GithubJob(url string) (models.Job, error) {
 	resp.Body.Close()
 	
 	
-	h1Selector, err := selector.Selector("h1")
+	jobNameSelector, err := selector.Selector("h1")
 	if err != nil { return job, err }
 	
 	descriptionSelector, err := selector.Selector("div.column.main")
@@ -248,9 +505,9 @@ func GithubJob(url string) (models.Job, error) {
 	h5content, err := h5.NewFromString(string(content))
 	if err != nil { return job, err }
 	
-	h1Nodes := h1Selector.Find(h5content.Top())
-	if (len(h1Nodes) > 0) {
-		job.JobTitle = strings.TrimSpace(h1Nodes[0].FirstChild.Data)
+	jobNameNodes := jobNameSelector.Find(h5content.Top())
+	if (len(jobNameNodes) > 0) {
+		job.JobTitle = strings.TrimSpace(jobNameNodes[0].FirstChild.Data)
 	}
 	
 	companyNameNodes := companyNameSelector.Find(h5content.Top())
@@ -298,7 +555,7 @@ func ResumatorJob(url string) (models.Job, error) {
 	titleSelector, err := selector.Selector("title")
 	if err != nil { return job, err }
 	
-	h1Selector, err := selector.Selector("h1")
+	jobNameSelector, err := selector.Selector("h1")
 	if err != nil { return job, err }
 	
 	descriptionSelector, err := selector.Selector("#resumator-job-description")
@@ -319,9 +576,9 @@ func ResumatorJob(url string) (models.Job, error) {
 	h5content, err := h5.NewFromString(string(content))
 	if err != nil { return job, err }
 	
-	h1Nodes := h1Selector.Find(h5content.Top())
-	if (len(h1Nodes) > 0) {
-		job.JobTitle = h1Nodes[0].FirstChild.Data
+	jobNameNodes := jobNameSelector.Find(h5content.Top())
+	if (len(jobNameNodes) > 0) {
+		job.JobTitle = jobNameNodes[0].FirstChild.Data
 	}
 	
 	possibleCompanyNameNodes := possibleCompanyNameSelector.Find(h5content.Top())

@@ -1,5 +1,9 @@
 package models
 
+import (
+	"time"
+)
+
 type Job struct {
 	Id              int64
 	JobTitle        string
@@ -11,5 +15,6 @@ type Job struct {
 	CompanyUrl      string
 	SourceUrl       string
 	SourceName      string
+	PostedAt        time.Time
 }
 

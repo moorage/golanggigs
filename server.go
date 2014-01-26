@@ -47,8 +47,17 @@ func IndexJson(res http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-	//results = append(results, result...)
-	fmt.Printf("Jobvite [%d results]: %#v\n", len(result), result)
+	
+	for i := 0; i < len(result); i++ {
+		job, err := scrapers.JobviteJob(result[i])
+		if err != nil {
+			panic(err)
+		}
+		if len(job.JobTitle) > 0 {
+			results = append(results, job)
+		}
+	}
+	// fmt.Printf("Jobvite [%d results]: %#v\n", len(result), result)
 
 	result, err = scrapers.Google("golang +\"/jobs2/\"", "linkedin.com")
 	if err != nil {
@@ -84,15 +93,33 @@ func IndexJson(res http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-	//results = append(results, result...)
-	fmt.Printf("StackOverflow [%d results]: %#v\n", len(result), result)
+	
+	for i := 0; i < len(result); i++ {
+		job, err := scrapers.StackOverflowJob(result[i])
+		if err != nil {
+			panic(err)
+		}
+		if len(job.JobTitle) > 0 {
+			results = append(results, job)
+		}
+	}
+	// fmt.Printf("StackOverflow [%d results]: %#v\n", len(result), result)
 
 	result, err = scrapers.Dice("golang")
 	if err != nil {
 		panic(err)
 	}
-	//results = append(results, result...)
-	fmt.Printf("Dice [%d results]: %#v\n", len(result), result)
+	
+	for i := 0; i < len(result); i++ {
+		job, err := scrapers.DiceJob(result[i])
+		if err != nil {
+			panic(err)
+		}
+		if len(job.JobTitle) > 0 {
+			results = append(results, job)
+		}
+	}
+	// fmt.Printf("Dice [%d results]: %#v\n", len(result), result)
 
 	jsonified, err := json.Marshal(results)
 	if err != nil {
