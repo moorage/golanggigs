@@ -15,17 +15,31 @@ footer {
 }
 
 
-a { cursor:pointer; }
+a { cursor:pointer; color:#375EAB; }
 
 a strong {color:#000;}
 a:hover strong {text-decoration:none;}
 a span {margin-left:10px; text-decoration:underline;}
+
 .navbar-collapse, .navbar-form {
-  background: #E0EBF5;  
+  background: #e0ebf5; /* Old browsers */
+  background: -moz-linear-gradient(top,  #e0ebf5 0%, #d4e5f4 100%); /* FF3.6+ */
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#e0ebf5), color-stop(100%,#d4e5f4)); /* Chrome,Safari4+ */
+  background: -webkit-linear-gradient(top,  #e0ebf5 0%,#d4e5f4 100%); /* Chrome10+,Safari5.1+ */
+  background: -o-linear-gradient(top,  #e0ebf5 0%,#d4e5f4 100%); /* Opera 11.10+ */
+  background: -ms-linear-gradient(top,  #e0ebf5 0%,#d4e5f4 100%); /* IE10+ */
+  background: linear-gradient(to bottom,  #e0ebf5 0%,#d4e5f4 100%); /* W3C */
 }
 
 .navbar-inverse {
-  background-color: #E0EBF5;
+  background: #e0ebf5; /* Old browsers */
+  background: -moz-linear-gradient(top,  #e0ebf5 0%, #d4e5f4 100%); /* FF3.6+ */
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#e0ebf5), color-stop(100%,#d4e5f4)); /* Chrome,Safari4+ */
+  background: -webkit-linear-gradient(top,  #e0ebf5 0%,#d4e5f4 100%); /* Chrome10+,Safari5.1+ */
+  background: -o-linear-gradient(top,  #e0ebf5 0%,#d4e5f4 100%); /* Opera 11.10+ */
+  background: -ms-linear-gradient(top,  #e0ebf5 0%,#d4e5f4 100%); /* IE10+ */
+  background: linear-gradient(to bottom,  #e0ebf5 0%,#d4e5f4 100%); /* W3C */
+  
   border-color: #E0EBF5;
 }
 .navbar-inverse .navbar-nav>li>a {
@@ -40,4 +54,18 @@ a span {margin-left:10px; text-decoration:underline;}
   color: #375EAB;
   text-decoration:underline;
   background-color: transparent;
+}
+.table>thead>tr>th, .table>tbody>tr>th, .table>tfoot>tr>th, .table>thead>tr>td, .table>tbody>tr>td, .table>tfoot>tr>td {
+  padding:10px;
+  font-size: 130%;
+}
+
+table {
+  font-size: 1.2rem;
+}
+
+#last-updated {
+  color: rgba(0,0,0,0.5);
+  font-size: 1.3rem;
+  letter-spacing: normal;
 }

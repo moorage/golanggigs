@@ -1,4 +1,4 @@
-$.getJSON('/index.json', function(data) {
+$.getJSON('/index.json', function(data) { console.log(data);
   $('#busy').hide();
   
   if (data.error) { 

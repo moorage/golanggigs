@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"strconv"
+	"time"
 	"../models"
 )
 
@@ -380,7 +382,7 @@ func JobviteJob(url string) (models.Job, error) {
 	if (len(howtoapplyNodes) > 0) {
 		job.HowToApply = strings.Replace(innerHtml(howtoapplyNodes[len(howtoapplyNodes)-1]), "h2>", "span>", -1)
 	} else {
-		job.HowToApply = "Apply On LinkedIn"
+		job.HowToApply = "Apply On Jobvite"
 	}
 	
 	companyUrlNodes := companyUrlSelector.Find(h5content.Top())
@@ -430,6 +432,9 @@ func LinkedinJob(url string) (models.Job, error) {
 	companyNameSelector, err := selector.Selector("h2.sub-header span")
 	if err != nil { return job, err }
 	
+	datePostedSelector, err := selector.Selector("div[itemprop=datePosted]")
+	if err != nil { return job, err }
+	
 	h5content, err := h5.NewFromString(string(content))
 	if err != nil { return job, err }
 	
@@ -467,6 +472,18 @@ func LinkedinJob(url string) (models.Job, error) {
 	descriptionNodes := descriptionSelector.Find(h5content.Top())
 	if (len(descriptionNodes) > 0) {
 		job.JobDescription = innerHtml(descriptionNodes[0])
+	}
+
+	datePostedNodes := datePostedSelector.Find(h5content.Top())
+	if (len(datePostedNodes) > 0) {
+		datePostedValue := strings.Split(datePostedNodes[0].LastChild.Data, "Posted ")[1]
+		if strings.Index(datePostedValue, "days ago") > -1 {
+			if i, err := strconv.ParseInt(strings.Split(datePostedValue, " days ago")[0], 10, 64); err == nil {
+				job.PostedAt = time.Now().AddDate(0, 0, 0 - int(i))
+			} else {
+				panic(err)
+			}
+		}
 	}
 	
 	return job, nil
