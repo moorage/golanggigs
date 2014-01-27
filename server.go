@@ -141,10 +141,11 @@ func main() {
 	dbPort := strings.Split(strings.Split(strings.Split(postgresUrl, "@")[1], ":")[1], "/")[0]
 	dbName := strings.Split(strings.Split(postgresUrl, "@")[1], "/")[1]
 
-	_, err := sql.Open("postgres", "user="+dbUser+" password="+dbPw+" dbname="+dbName+" sslmode=verify-full port="+dbPort+" host="+dbHost)
+	db, err := sql.Open("postgres", "user="+dbUser+" password="+dbPw+" dbname="+dbName+" sslmode=verify-full port="+dbPort+" host="+dbHost)
 	if err != nil {
 		panic(err)
 	}
+	defer db.Close()
 
 	http.HandleFunc("/", Index)
 	http.HandleFunc("/index.json", IndexJson)
