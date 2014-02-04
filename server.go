@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"github.com/hoisie/mustache"
 	// "github.com/garyburd/redigo/redis"
 )
 
