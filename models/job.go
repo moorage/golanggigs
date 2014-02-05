@@ -23,6 +23,44 @@ type Job struct {
 }
 
 
+func AllRecentJobs(db *sql.DB) ([]*Job, error) {
+	jobs := []*Job{}
+	
+	rows, err := db.Query("SELECT Id, JobTitle, JobLocation, JobDescription, HowToApply, CompanyLocation, CompanyName, CompanyUrl, SourceUrl, SourceName, PostedAt, CreatedAt FROM jobs ORDER BY CreatedAt DESC LIMIT $1", 1000)
+	if err != nil { return jobs, err }
+	
+	defer rows.Close()
+	for rows.Next() {
+		job := &Job{}
+		jobs = append(jobs, job)
+		
+		err = job.scanRow(rows)
+		if err != nil { return jobs, err }
+	}
+
+	err = rows.Err()
+	if err != nil { return jobs, err }
+	
+	return jobs, nil
+}
+
+func (self *Job) scanRow(rows *sql.Rows) error {
+	return rows.Scan(
+		&self.Id,
+		&self.JobTitle,
+		&self.JobLocation,
+		&self.JobDescription,
+		&self.HowToApply,
+		&self.CompanyLocation,
+		&self.CompanyName,
+		&self.CompanyUrl,
+		&self.SourceUrl,
+		&self.SourceName,
+		&self.PostedAt,
+		&self.CreatedAt,
+	)
+}
+
 func (self *Job) PassesCreationValidation(db *sql.DB) (bool, error) {
 	var stmt *sql.Stmt
 	var err error

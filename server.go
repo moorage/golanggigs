@@ -2,20 +2,32 @@
 package main
 
 import (
-	"github.com/moorage/golanggigs/scrapers"
-	"database/sql"
 	"log"
 	"time"
-	_ "github.com/lib/pq"
-	"net/http"
 	"os"
-	"strings"
-	// "github.com/hoisie/mustache"
+	"fmt"
+	"net/http"
+	"database/sql"
+	_ "github.com/lib/pq"
+	"github.com/hoisie/mustache"
 	// "github.com/garyburd/redigo/redis"
+	"github.com/moorage/golanggigs/scrapers"
+	"github.com/moorage/golanggigs/config"
+	"github.com/moorage/golanggigs/models"
 )
 
 func Index(res http.ResponseWriter, req *http.Request) {
-	http.ServeFile(res, req, "application.html")
+	postgresDataSource, err := config.PostgresDataSource()
+	if err != nil { panic(err) }
+	
+	db, err := sql.Open("postgres", postgresDataSource)
+	if err != nil { panic(err) }
+	defer db.Close()
+	
+	jobs, err := models.AllRecentJobs(db)
+	if err != nil { panic(err) }
+
+	fmt.Fprint(res, mustache.RenderFile("application.html.mustache", map[string][]*models.Job{"jobs": jobs}))
 }
 
 func IndexJson(res http.ResponseWriter, req *http.Request) {
@@ -30,27 +42,17 @@ func IndexJson(res http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
-	postgresUrl := os.Getenv("HEROKU_POSTGRESQL_AQUA_URL")
-	if len(postgresUrl) < 1 {
-		panic("HEROKU_POSTGRESQL_AQUA_URL is not set")
-	}
+	postgresDataSource, err := config.PostgresDataSource()
+	if err != nil { panic(err) }
 
-	dbUser := strings.Split(strings.Split(postgresUrl, "postgres://")[1], ":")[0]
-	dbPw := strings.Split(strings.Split(strings.Split(postgresUrl, "postgres://")[1], ":")[1], "@")[0]
-	dbHost := strings.Split(strings.Split(postgresUrl, "@")[1], ":")[0]
-	dbPort := strings.Split(strings.Split(strings.Split(postgresUrl, "@")[1], ":")[1], "/")[0]
-	dbName := strings.Split(strings.Split(postgresUrl, "@")[1], "/")[1]
-
-	db, err := sql.Open("postgres", "user="+dbUser+" password="+dbPw+" dbname="+dbName+" sslmode=require port="+dbPort+" host="+dbHost)
-	if err != nil {
-		panic(err)
-	}
+	db, err := sql.Open("postgres", postgresDataSource)
+	if err != nil { panic(err) }
 	defer db.Close()
 
 	// Find and save new jobs every hour.
 	go func() {
 		for {
-			err = scrapers.ScrapeJobs("postgres", "user="+dbUser+" password="+dbPw+" dbname="+dbName+" sslmode=require port="+dbPort+" host="+dbHost)
+			err = scrapers.ScrapeJobs("postgres", postgresDataSource)
 			if err != nil {
 				log.Printf("ERROR occurred when calling main models.ScrapeJobs: %#v\n", err.Error())
 			}
