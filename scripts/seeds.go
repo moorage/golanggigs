@@ -20,31 +20,49 @@ func main() {
 	dbPort := strings.Split(strings.Split(strings.Split(postgresUrl, "@")[1], ":")[1], "/")[0]
 	dbName := strings.Split(strings.Split(postgresUrl, "@")[1], "/")[1]
 
-	db, err := sql.Open("postgres", "user="+dbUser+" password="+dbPw+" dbname="+dbName+" sslmode=verify-full port="+dbPort+" host="+dbHost)
+	db, err := sql.Open("postgres", "user="+dbUser+" password="+dbPw+" dbname="+dbName+" sslmode=require port="+dbPort+" host="+dbHost)
 	if err != nil {
 		panic(err)
 	}
 	defer db.Close()
 	
-	log.Println("Creating Jobs Table.")
-	_, err = db.Exec("create table jobs (" + 
-	"Id               BIGSERIAL     PRIMARY KEY," + 
-	"JobTitle         VARCHAR(512)  NOT NULL," + 
-	"JobLocation      VARCHAR(512)          ," + 
-	"JobDescription   TEXT                  ," + 
-	"HowToApply       VARCHAR(512)          ," + 
-	"CompanyLocation  VARCHAR(512)          ," + 
-	"CompanyName      VARCHAR(512)  NOT NULL," + 
-	"CompanyUrl       VARCHAR(1024)         ," + 
-	"SourceUrl        VARCHAR(512)          ," + 
-	"SourceName       VARCHAR(512)  NOT NULL," + 
-	"PostedAt         timestamp             ," + 
-	"CreatedAt        timestamp DEFAULT current_timestamp NOT NULL," + 
-	");")
+	log.Println("Checking if Jobs Table Exists.")
+	rows, err := db.Query("select exists(select * from information_schema.tables where table_name = $1)", "jobs")
 	
-	if err != nil {
-		panic(err)
+	tableExists := false
+	
+	defer rows.Close()
+	if rows.Next() {
+		err = rows.Scan(&tableExists)
+		if err != nil {
+			panic(err)
+		}
 	}
+	
+	if !tableExists {
+		log.Println("Jobs table missing. Creating Jobs Table.")
+		_, err = db.Exec("create table jobs (" + 
+		"Id               BIGSERIAL     PRIMARY KEY," + 
+		"JobTitle         VARCHAR(512)  NOT NULL," + 
+		"JobLocation      VARCHAR(512)          ," + 
+		"JobDescription   TEXT                  ," + 
+		"HowToApply       VARCHAR(512)          ," + 
+		"CompanyLocation  VARCHAR(512)          ," + 
+		"CompanyName      VARCHAR(512)  NOT NULL," + 
+		"CompanyUrl       VARCHAR(1024)         ," + 
+		"SourceUrl        VARCHAR(512)          ," + 
+		"SourceName       VARCHAR(512)  NOT NULL," + 
+		"PostedAt         timestamp             ," + 
+		"CreatedAt        timestamp DEFAULT current_timestamp NOT NULL" + 
+		");")
+	
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		log.Println("Jobs table exists. Skipping creation.")
+	}
+
 	
 	log.Println("Done with seeds.go.")
 }
