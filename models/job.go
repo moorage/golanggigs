@@ -4,7 +4,7 @@ import (
 	"time"
 	"errors"
 	"database/sql"
-	_ "github.com/bmizerany/pq"
+	_ "github.com/lib/pq"
 )
 
 type Job struct {
@@ -21,6 +21,7 @@ type Job struct {
 	PostedAt        time.Time
 	CreatedAt       time.Time
 }
+
 
 func (self *Job) PassesCreationValidation(db *sql.DB) (bool, error) {
 	var stmt *sql.Stmt
@@ -39,13 +40,13 @@ func (self *Job) PassesCreationValidation(db *sql.DB) (bool, error) {
 	if (self.Id > 0) {
 		rows, err = stmt.Query(self.JobTitle, self.CompanyName, self.SourceUrl, self.Id)
 	} else {
-		rows, err = stmt.Query(self.JobTitle, self.CompanyName, self.SourceUrl, self.Id)
+		rows, err = stmt.Query(self.JobTitle, self.CompanyName, self.SourceUrl)
 	}
 	if err != nil {
 		return false, err
 	}
 	defer rows.Close()
-	
+
 	// if any rows are returned, this doesn't pass validation
 	for rows.Next() {
 		return false, nil
@@ -59,19 +60,15 @@ func (self *Job) Create(db *sql.DB) error {
 	if (!validationPassed) {
 		return errors.New("called create on an object that doesn't pass validation")
 	}
-	
-	stmt, err := db.Prepare("insert into jobs (JobTitle, JobLocation, JobDescription, HowToApply, CompanyLocation, CompanyName, CompanyUrl, SourceUrl, SourceName, PostedAt, CreatedAt) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)")
+
+	stmt, err := db.Prepare("insert into jobs (JobTitle, JobLocation, JobDescription, HowToApply, CompanyLocation, CompanyName, CompanyUrl, SourceUrl, SourceName, PostedAt) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)")
 	if err != nil { return err }
 	defer stmt.Close()
-	
-	res, err := stmt.Exec(self.JobTitle, self.JobLocation, self.JobDescription, self.HowToApply, self.CompanyLocation, self.CompanyName, self.CompanyUrl, self.SourceUrl, self.SourceName, self.PostedAt, self.CreatedAt)
+
+	_, err = stmt.Exec(self.JobTitle, self.JobLocation, self.JobDescription, self.HowToApply, self.CompanyLocation, self.CompanyName, self.CompanyUrl, self.SourceUrl, self.SourceName, self.PostedAt)
 	if err != nil {
 		return err
 	}
-	lastId, err := res.LastInsertId()
-	if err != nil {
-		return err
-	}
-	self.Id = lastId
+
 	return nil
 }

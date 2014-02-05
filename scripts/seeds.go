@@ -5,7 +5,9 @@ import (
 	"strings"
 	"os"
 	"database/sql"
-	_ "github.com/bmizerany/pq"
+	_ "github.com/lib/pq"
+	"github.com/moorage/golanggigs/scrapers"
+	// "github.com/moorage/golanggigs/models"
 )
 
 func main() {
@@ -25,6 +27,8 @@ func main() {
 		panic(err)
 	}
 	defer db.Close()
+	
+	// db.Exec("drop table jobs")
 	
 	log.Println("Checking if Jobs Table Exists.")
 	rows, err := db.Query("select exists(select * from information_schema.tables where table_name = $1)", "jobs")
@@ -63,6 +67,36 @@ func main() {
 		log.Println("Jobs table exists. Skipping creation.")
 	}
 
+	// results := []models.Job{}
+	// 
+	// result, err := scrapers.Google("golang +\"/jobs2/\"", "linkedin.com")
+	// if err != nil { panic(err) }
+	// 
+	// for i := 0; i < len(result); i++ {
+	// 	job, err := scrapers.LinkedinJob(result[i])
+	// 	if err != nil { panic(err) }
+	// 	
+	// 	if len(job.JobTitle) > 0 {
+	// 		results = append(results, job)
+	// 	}
+	// }
+	// // fmt.Printf("LinkedIn [%d results]: %#v\n", len(result), result)
+	// 
+	// if len(results) > 0 {
+	// 	db, err := sql.Open("postgres", "user="+dbUser+" password="+dbPw+" dbname="+dbName+" sslmode=require port="+dbPort+" host="+dbHost)
+	// 	if err != nil { panic(err) }
+	// 
+	// 	defer db.Close()
+	// 	
+	// 	err = results[0].Create(db)
+	// 	if err != nil { panic(err) }
+	// }
+
+	log.Println("Scraping jobs.")
+	err = scrapers.ScrapeJobs("postgres", "user="+dbUser+" password="+dbPw+" dbname="+dbName+" sslmode=require port="+dbPort+" host="+dbHost)
+	if err != nil {
+		panic(err)
+	}
 	
 	log.Println("Done with seeds.go.")
 }

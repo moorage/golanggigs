@@ -11,8 +11,116 @@ import (
 	"strconv"
 	"time"
 	"github.com/moorage/golanggigs/models"
+	"database/sql"
+	_ "github.com/lib/pq"
+	"fmt"
+	"log"
 )
 
+
+func ScrapeJobs(driverName, dataSourceName string) error {
+	results := []models.Job{}
+
+	result, err := Google("golang", "theresumator.com")
+	if err != nil {
+		panic(err)
+	}
+
+	for i := 0; i < len(result); i++ {
+		job, err := ResumatorJob(result[i])
+		if err != nil { return err }
+		
+		results = append(results, job)
+	}
+	// fmt.Printf("The Resumator [%d results]: %#v\n", len(result), result)
+
+	result, err = Google("golang", "jobscore.com")
+	if err != nil { return err }
+	
+	//results = append(results, result...)
+	fmt.Printf("Jobscore [%d results]: %#v\n", len(result), result)
+
+	result, err = Google("golang", "jobvite.com")
+	if err != nil { return err }
+	
+	for i := 0; i < len(result); i++ {
+		job, err := JobviteJob(result[i])
+		if err != nil { return err }
+		
+		if len(job.JobTitle) > 0 {
+			results = append(results, job)
+		}
+	}
+	// fmt.Printf("Jobvite [%d results]: %#v\n", len(result), result)
+
+	result, err = Google("golang +\"/jobs2/\"", "linkedin.com")
+	if err != nil { return err }
+
+	for i := 0; i < len(result); i++ {
+		job, err := LinkedinJob(result[i])
+		if err != nil { return err }
+		
+		if len(job.JobTitle) > 0 {
+			results = append(results, job)
+		}
+	}
+	// fmt.Printf("LinkedIn [%d results]: %#v\n", len(result), result)
+
+	result, err = Github("golang")
+	if err != nil { return err }
+
+	for i := 0; i < len(result); i++ {
+		job, err := GithubJob(result[i])
+		if err != nil { return err }
+		
+		results = append(results, job)
+	}
+	// fmt.Printf("GitHub [%d results]: %#v\n", len(result), result)
+
+	result, err = StackOverflow("golang")
+	if err != nil { return err }
+	
+	for i := 0; i < len(result); i++ {
+		job, err := StackOverflowJob(result[i])
+		if err != nil { return err }
+		
+		if len(job.JobTitle) > 0 {
+			results = append(results, job)
+		}
+	}
+	// fmt.Printf("StackOverflow [%d results]: %#v\n", len(result), result)
+
+	result, err = Dice("golang")
+	if err != nil { return err }
+	
+	for i := 0; i < len(result); i++ {
+		job, err := DiceJob(result[i])
+		if err != nil { return err }
+		
+		if len(job.JobTitle) > 0 {
+			results = append(results, job)
+		}
+	}
+	// fmt.Printf("Dice [%d results]: %#v\n", len(result), result)
+
+
+	db, err := sql.Open(driverName, dataSourceName)
+	if err != nil { return err }
+	
+	defer db.Close()
+
+	for _,job := range results {
+		valid, err := job.PassesCreationValidation(db)
+		if err != nil { return err }
+		
+		if valid {
+			err = job.Create(db)
+			if err != nil { return err }
+		}
+	}
+	
+	return nil
+}
 
 func removeSubstringDuplicates(source []string) []string {
 	nonduplicates := []string{}
