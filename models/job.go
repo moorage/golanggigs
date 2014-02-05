@@ -2,6 +2,9 @@ package models
 
 import (
 	"time"
+	"errors"
+	"database/sql"
+	_ "github.com/bmizerany/pq"
 )
 
 type Job struct {
@@ -19,8 +22,8 @@ type Job struct {
 	CreatedAt       time.Time
 }
 
-func (self *Job) PassesCreationValidation() (bool, error) {
-	var stmt *db.Stmt
+func (self *Job) PassesCreationValidation(db *sql.DB) (bool, error) {
+	var stmt *sql.Stmt
 	var err error
 	if (self.Id > 0) {
 		stmt, err = db.Prepare("select Id from jobs where ((JobTitle = $1 AND CompanyName = $2) OR (SourceUrl = $3)) AND Id <> $4 LIMIT 1")
@@ -32,7 +35,7 @@ func (self *Job) PassesCreationValidation() (bool, error) {
 	}
 	defer stmt.Close()
 
-	var rows *db.Rows
+	var rows *sql.Rows
 	if (self.Id > 0) {
 		rows, err = stmt.Query(self.JobTitle, self.CompanyName, self.SourceUrl, self.Id)
 	} else {
@@ -50,15 +53,15 @@ func (self *Job) PassesCreationValidation() (bool, error) {
 	return true, nil
 }
 
-func (self *Job) Create() error {
-	if (!self.PassesCreationValidation()) {
+func (self *Job) Create(db *sql.DB) error {
+	validationPassed, err := self.PassesCreationValidation(db)
+	if err != nil { return err }
+	if (!validationPassed) {
 		return errors.New("called create on an object that doesn't pass validation")
 	}
 	
 	stmt, err := db.Prepare("insert into jobs (JobTitle, JobLocation, JobDescription, HowToApply, CompanyLocation, CompanyName, CompanyUrl, SourceUrl, SourceName, PostedAt, CreatedAt) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)")
-	if err != nil {
-		return err
-	}
+	if err != nil { return err }
 	defer stmt.Close()
 	
 	res, err := stmt.Exec(self.JobTitle, self.JobLocation, self.JobDescription, self.HowToApply, self.CompanyLocation, self.CompanyName, self.CompanyUrl, self.SourceUrl, self.SourceName, self.PostedAt, self.CreatedAt)

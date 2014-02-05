@@ -10,7 +10,7 @@ import (
 	"strings"
 	"strconv"
 	"time"
-	"../models"
+	"github.com/moorage/golanggigs/models"
 )
 
 
