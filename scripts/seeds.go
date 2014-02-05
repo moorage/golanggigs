@@ -26,5 +26,25 @@ func main() {
 	}
 	defer db.Close()
 	
+	log.Println("Creating Jobs Table.")
+	_, err = db.Exec("create table jobs (" + 
+	"Id               BIGSERIAL     PRIMARY KEY," + 
+	"JobTitle         VARCHAR(512)  NOT NULL," + 
+	"JobLocation      VARCHAR(512)          ," + 
+	"JobDescription   TEXT                  ," + 
+	"HowToApply       VARCHAR(512)          ," + 
+	"CompanyLocation  VARCHAR(512)          ," + 
+	"CompanyName      VARCHAR(512)  NOT NULL," + 
+	"CompanyUrl       VARCHAR(1024)         ," + 
+	"SourceUrl        VARCHAR(512)          ," + 
+	"SourceName       VARCHAR(512)  NOT NULL," + 
+	"PostedAt         DATETIME              ," + 
+	"CreatedAt        DATETIME      NOT NULL," + 
+	");")
+	
+	if err != nil {
+		panic(err)
+	}
+	
 	log.Println("Done with seeds.go.")
 }

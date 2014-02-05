@@ -23,9 +23,9 @@ func (self *Job) PassesCreationValidation() (bool, error) {
 	var stmt *db.Stmt
 	var err error
 	if (self.Id > 0) {
-		stmt, err = db.Prepare("select id from jobs where ((JobTitle = $1 AND CompanyName = $2) OR (SourceUrl = $3)) AND Id <> $4 LIMIT 1")
+		stmt, err = db.Prepare("select Id from jobs where ((JobTitle = $1 AND CompanyName = $2) OR (SourceUrl = $3)) AND Id <> $4 LIMIT 1")
 	} else {
-		stmt, err = db.Prepare("select id from jobs where ((JobTitle = $1 AND CompanyName = $2) OR (SourceUrl = $3)) LIMIT 1")
+		stmt, err = db.Prepare("select Id from jobs where ((JobTitle = $1 AND CompanyName = $2) OR (SourceUrl = $3)) LIMIT 1")
 	}
 	if err != nil {
 		return false, err
