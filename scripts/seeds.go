@@ -38,8 +38,8 @@ func main() {
 	"CompanyUrl       VARCHAR(1024)         ," + 
 	"SourceUrl        VARCHAR(512)          ," + 
 	"SourceName       VARCHAR(512)  NOT NULL," + 
-	"PostedAt         DATETIME              ," + 
-	"CreatedAt        DATETIME      NOT NULL," + 
+	"PostedAt         timestamp             ," + 
+	"CreatedAt        timestamp DEFAULT current_timestamp NOT NULL," + 
 	");")
 	
 	if err != nil {
