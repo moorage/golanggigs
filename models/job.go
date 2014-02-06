@@ -61,6 +61,20 @@ func (self *Job) scanRow(rows *sql.Rows) error {
 	)
 }
 
+func (self *Job) FormattedJobDate() string {
+	displayedDate := self.PostedAt
+	if self.PostedAt.IsZero() {
+		displayedDate = self.CreatedAt
+	}
+	
+	layout := "Jan 2"
+	if time.Now().Year() != displayedDate.Year() {
+		layout = "Jan 2, 2006"
+	}
+	
+	return displayedDate.Format(layout)
+}
+
 func (self *Job) PassesCreationValidation(db *sql.DB) (bool, error) {
 	var stmt *sql.Stmt
 	var err error

@@ -27,7 +27,12 @@ func Index(res http.ResponseWriter, req *http.Request) {
 	jobs, err := models.AllRecentJobs(db)
 	if err != nil { panic(err) }
 
-	fmt.Fprint(res, mustache.RenderFile("application.html.mustache", map[string][]*models.Job{"jobs": jobs}))
+	firstJob := []*models.Job{}
+	if len(jobs) > 0 {
+		firstJob = append(firstJob, jobs[0])
+	}
+
+	fmt.Fprint(res, mustache.RenderFile("application.html.mustache", map[string][]*models.Job{"jobs": jobs, "firstJob": firstJob }))
 }
 
 func IndexJson(res http.ResponseWriter, req *http.Request) {

@@ -43,7 +43,12 @@
     <div class="container">
       <h2>
         <a href="/">Gigs</a>
-        <span id="last-updated">Latest post about 7 hours ago</span>
+        <span id="last-updated">
+          Latest post 
+          {{#firstJob}}
+            {{FormattedJobDate}}
+          {{/firstJob}}
+        </span>
       </h2>
       
       <table id="gigs" class="table">
@@ -55,6 +60,9 @@
                   <strong>{{CompanyName}}</strong>
                   <span>{{JobTitle}}</span>
                 </a>
+              </td>
+              <td>
+                {{FormattedJobDate}}
               </td>
             </tr>
           {{/jobs}}
